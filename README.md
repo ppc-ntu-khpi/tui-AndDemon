@@ -1,21 +1,134 @@
 # UI Lab 1
-![](terminal-icon.png)
-![](gui-icon.png)
+Грисенка Андрія 35 - група
+![image](https://github.com/AndDemon/Banking/assets/115999885/209e6e04-496f-4e7e-8984-8742ffac9354)
+TUIdemo.java:
+```java
+package com.mybank.domain;
+import jexer.TAction;
+import jexer.TApplication;
+import jexer.TField;
+import jexer.TText;
+import jexer.TWindow;
+import jexer.event.TMenuEvent;
+import jexer.menu.TMenu;
 
-Це одна з робіт, які доповнюють основний цикл лабораторних робіт #1-8 (проект **Banking**, [Netbeans](https://netbeans.org/)) з ООП.  Основна мета цих додаткових вправ - познайомитись з різними видами інтерфейсів користувача та засобами їх створення. Згадувані 'базові' роботи розміщено в [окремому репозиторії](https://github.com/liketaurus/OOP-JAVA) (якщо будете робити завдання на "4" або "5" раджу переглянути [діаграму класів](https://github.com/liketaurus/OOP-JAVA/blob/master/MyBank.png), аби розуміти які методи є у класів).
+public class TUIdemo extends TApplication {
 
-В ході першої роботи вам пропонується виконати **наступне завдання** - [Робота 1: TUI з Jexer](https://github.com/ppc-ntu-khpi/TUI-Lab1-Starter/blob/master/Lab%201%20-TUI/Lab%201.md)
-  
-**Додаткове завдання** (для тих хто зробив все і прагне більшого): [дивіться тут](https://github.com/ppc-ntu-khpi/TUI-Lab1-Starter/blob/master/Lab%201%20-TUI/Lab%201%20-%20add.md)
+    private static final int ABOUT_APP = 2000;
+    private static final int CUST_INFO = 2010;
 
-Всі необхідні бібліотеки містяться у теці [jars](https://github.com/ppc-ntu-khpi/TUI-Lab1-Starter/tree/master/jars). В тому числі - всі необхідні відкомпільовані класи з робіт 1-8 - файл [MyBank.jar](https://github.com/ppc-ntu-khpi/TUI-Lab1-Starter/blob/master/jars/MyBank.jar). Файл даних лежить у теці [data](https://github.com/ppc-ntu-khpi/TUI-Lab1-Starter/tree/master/data).
+    public static void main(String[] args) throws Exception {
 
----
-**УВАГА! Не забуваємо здавати завдання через Google Classroom та вказувати посилання на створений для вас репозиторій!**
+        SampleData.init();
 
-Також пам'ятайте, що ніхто не заважає вам редагувати файл README у вашому репозиторії😉.
-А ще - дуже раджу спробувати нову фічу - інтеграцію з IDE REPL.it (хоч з таким завданням вона може й не впоратись, однак, цікаво ж!).
+        TUIdemo tdemo = new TUIdemo();
+        (new Thread(tdemo)).start();
+    }
 
-![](https://img.shields.io/badge/Made%20with-JAVA-red.svg)
-![](https://img.shields.io/badge/Made%20with-%20Netbeans-brightgreen.svg)
-![](https://img.shields.io/badge/Made%20at-PPC%20NTU%20%22KhPI%22-blue.svg) 
+    public TUIdemo() throws Exception {
+        super(BackendType.SWING);
+
+        addToolMenu();
+
+        TMenu fileMenu = addMenu("&File");
+        fileMenu.addItem(CUST_INFO, "&Customer Info");
+        fileMenu.addDefaultItem(TMenu.MID_SHELL);
+        fileMenu.addSeparator();
+        fileMenu.addDefaultItem(TMenu.MID_EXIT);
+
+
+        addWindowMenu();
+
+
+        TMenu helpMenu = addMenu("&Help");
+        helpMenu.addItem(ABOUT_APP, "&About...");
+
+
+        setFocusFollowsMouse(true);
+
+        ShowCustomerDetails();
+    }
+
+    @Override
+    protected boolean onMenu(TMenuEvent menu) {
+        if (menu.getId() == ABOUT_APP) {
+            messageBox("About", "\t\t\t\t\t   Just a simple Jexer demo.\n\nCopyright \u00A9 2019 Alexander 'Taurus' Babich").show();
+            return true;
+        }
+        if (menu.getId() == CUST_INFO) {
+            ShowCustomerDetails();
+            return true;
+        }
+        return super.onMenu(menu);
+    }
+
+    private void ShowCustomerDetails() {
+        TWindow custWin = addWindow("Customer Window", 2, 1, 40, 10, TWindow.NOZOOMBOX);
+        custWin.newStatusBar("Enter valid customer number and press Show...");
+
+        custWin.addLabel("Enter customer number: ", 2, 2);
+        TField custNo = custWin.addField(24, 2, 3, false);
+        TText details = custWin.addText("Owner Name: \nAccount Type: \nAccount Balance: ", 2, 4, 38, 8);
+        custWin.addButton("&Show", 28, 2, new TAction() {
+            @Override
+            public void DO() {
+                try {
+                    int custNum = Integer.parseInt(custNo.getText());
+                    Bank bank = Bank.getBank();
+                    Customer customer = bank.getCustomer(custNum);
+
+                    if (customer == null) {
+                        messageBox("Error", "Customer not found!").show();
+                        return;
+                    }
+
+                    StringBuilder customerDetails = new StringBuilder();
+                    customerDetails.append("Owner Name: ").append(customer.getFirstName()).append(" ").append(customer.getLastName()).append("\n");
+
+                    if (customer.getNumberOfAccounts() > 0) {
+                        Account account = customer.getAccount(0);
+                        if (account instanceof CheckingAccount) {
+                            customerDetails.append("Account Type: Checking\n");
+                        } else if (account instanceof SavingsAccount) {
+                            customerDetails.append("Account Type: Savings\n");
+                        }
+                        customerDetails.append("Account Balance: $").append(account.getBalance()).append("\n");
+                    } else {
+                        customerDetails.append("No accounts found for this customer.");
+                    }
+
+                    details.setText(customerDetails.toString());
+                } catch (Exception e) {
+                    messageBox("Error", "You must provide a valid customer number!").show();
+                }
+            }
+        });
+    }
+}
+```
+
+SampleData.java:
+```java
+package com.mybank.domain;
+
+public class SampleData {
+
+    public static void init() {
+        Bank bank = Bank.getBank();
+
+
+        bank.addCustomer("Андрій", "Грисенко");
+        Customer customer1 = bank.getCustomer(0);
+        customer1.addAccount(new CheckingAccount(12000.00, 50.00));
+
+
+        bank.addCustomer("Дмитро", "Петрено");
+        Customer customer2 = bank.getCustomer(1);
+        customer2.addAccount(new SavingsAccount(1500.00, 0.05));
+    }
+}
+
+```
+![image](https://github.com/AndDemon/Banking/assets/115999885/f69d6d0a-75a4-4591-86ac-4d78219e81d0)
+![image](https://github.com/AndDemon/Banking/assets/115999885/3df846ea-8e37-4700-9817-f733cdcf9859)
+
